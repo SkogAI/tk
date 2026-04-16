@@ -1,4 +1,4 @@
-use crate::command_utils::{run_command_line, CommandOutput};
+use crate::command_utils::{CommandOutput, run_command_line};
 use crate::errors::KeeperError;
 use error_stack::{IntoReport, Report};
 use serde::Deserialize;
@@ -54,13 +54,17 @@ pub fn get_task_command_map() -> HashMap<String, String> {
         "sbom".to_string(),
         format!("{} -DprojectType=application -DoutputName=application.cdx -DoutputFormat=json org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom", mvn_command),
     );
+    task_command_map.insert(
+        "skills".to_string(),
+        format!("{} com.skillsjars:maven-plugin:0.0.5:extract", mvn_command),
+    );
     if std::env::current_dir()
         .map(|dir| dir.join(".mvn/wrapper").exists())
         .unwrap_or(false)
     {
         if let Ok(code) = std::fs::read_to_string(".mvn/wrapper/maven-wrapper.properties") {
-            if !code.contains("apache-maven-3.9.12") {
-                task_command_map.insert("self-update".to_string(), format!("{} org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper -Dmaven=3.9.12", mvn_command));
+            if !code.contains("apache-maven-3.9.14") {
+                task_command_map.insert("self-update".to_string(), format!("{} org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper -Dmaven=3.9.14", mvn_command));
             }
         }
     }
@@ -69,12 +73,26 @@ pub fn get_task_command_map() -> HashMap<String, String> {
 
 pub fn run_task(
     task: &str,
-    _task_args: &[&str],
+    task_args: &[&str],
     _global_args: &[&str],
     verbose: bool,
 ) -> Result<CommandOutput, Report<KeeperError>> {
     if let Some(command_line) = get_task_command_map().get(task) {
-        run_command_line(command_line, verbose)
+        if task == "skills" {
+            let mut additional_args = task_args.join(" ");
+            if additional_args.is_empty() {
+                additional_args = "-Ddir=.agents/skills".to_string();
+            }
+            if additional_args.contains("-Pdir=") {
+                additional_args = additional_args.replace("-Pdir=", "-Ddir=");
+            } else if additional_args.contains("-dir=") {
+                additional_args = additional_args.replace("-dir=", "-Ddir=");
+            }
+            let command_line = format!("{} {}", command_line, additional_args);
+            run_command_line(&command_line, verbose)
+        } else {
+            run_command_line(command_line, verbose)
+        }
     } else {
         Err(KeeperError::ManagerTaskNotFound(task.to_owned(), "maven".to_string()).into_report())
     }

@@ -2,7 +2,24 @@
 
 # Task Keeper Changelog
 
+## [0.33.0] - 2026-03-29
 
+- Add `:xxx` named parameter for `queries.sql`
+- Update to gradle 9.4.1
+- Update to maven 3.9.14
+- Update to just 1.48
+- Use `makefile-lossless` to parse Makefile
+
+## [0.32.0] - 2026-03-01
+
+- Optimize `update`, `outdated` and `sbom` for Gradle with init-script and no configuration required now.
+- Add `skills` for Maven/Gradle projects to generate [SkillsJars](https://www.skillsjars.com/)
+
+```shell
+$ tk skills 
+$ # generate all skills under .agents/skill
+$ tk skills -Pdir=.qoder/skills
+```
 ## [0.31.0] - 2026-01-12
 
 - Add [usql](https://github.com/xo/usql) support: please create `queries.sql` with the following code:
